@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendle Points Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PENDLE POINTS CALCULATOR</h1>
+        </header>
+
+        <!-- Welcome Page -->
+        <div id="welcomePage" class="welcome-page">
+            <div class="welcome-content">
+                <div class="info-box">
+                    <h3>General Information</h3>
+                    <ul>
+                        <li>The ROI doesn't account for time value of money</li>
+                        <li>Hover parameter titles for detailed info</li>
+                        <li>For feedback and suggestions please contact me on X: <a href="https://x.com/marcusm4ximus" target="_blank">@marcusm4ximus</a></li>
+                        <li>This calculator was initially created to calculate YT returns from <a href="https://x.com/YuzuMoneyX" target="_blank">YuzuMoney</a>, which is currently the most transparent yield protocol I use and offers high yields. To use my link and support: <a href="https://app.yuzu.money?ref=Q477WPYH" target="_blank">YuzuMoney App</a></li>
+                    </ul>
+                </div>
+                
+                <div class="formula-box">
+                    <h3>Formula Chart</h3>
+                    <div class="formula-content">
+                        <div class="formula-section">
+                            <h4>Proportional Allocation Mode</h4>
+                            <p>When "Total Points During the Duration" is provided:</p>
+                            <div style="margin: 10px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace; line-height: 1.8;">
+                                <strong>Your Weighted Contribution</strong> = Σ (YT Amount × Multiplier × Days Remaining × Time Weight)<br><br>
+                                <strong>Network Weighted Contribution</strong> = Σ (Protocol TVL × Effective Multiplier × Days Remaining)<br><br>
+                                <strong>Your Share</strong> = <span style="white-space: nowrap;">Your Weighted Contribution / Network Weighted Contribution</span><br><br>
+                                <strong>Your Points</strong> = Fixed Network Points × Your Share
+                            </div>
+                        </div>
+                        <div class="formula-section">
+                            <h4>TVL-Generated Mode</h4>
+                            <p>When "Total Points During the Duration" is empty:</p>
+                            <div style="margin: 10px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace; line-height: 1.8;">
+                                <strong>Network Points</strong> = Σ (Protocol TVL × Effective Multiplier)<br><br>
+                                <strong>Your Points</strong> = Σ (Your YT × Multiplier × Time Weight)<br><br>
+                                <strong>Your Share</strong> = <span style="white-space: nowrap;">Your Points / Network Points</span>
+                            </div>
+                        </div>
+                        <div class="formula-section">
+                            <h4>Time Weighting</h4>
+                            <p>When time weighting is enabled, early entry days receive more weight in the calculation:</p>
+                            <div style="margin: 10px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace; line-height: 1.8;">
+                                <strong>Time Weight</strong> = <span style="white-space: nowrap;">Days Remaining / Duration</span><br><br>
+                                Where: <strong>Days Remaining</strong> = Duration - Current Day<br><br>
+                                When disabled: <strong>Time Weight</strong> = 1 (all days are equal)
+                            </div>
+                        </div>
+                        <div class="formula-section">
+                            <h4>Airdrop Allocation</h4>
+                            <div style="margin: 10px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace; line-height: 1.8;">
+                                <strong>Airdrop Tokens</strong> = Total Supply × Airdrop Percentage × Your Share<br><br>
+                                <strong>Token Price</strong> = <span style="white-space: nowrap;">FDV / Total Supply</span><br><br>
+                                <strong>Airdrop Value</strong> = Airdrop Tokens × Token Price<br><br>
+                                <strong>ROI</strong> = <span style="white-space: nowrap;">(Airdrop Value - Total Spent) / Total Spent × 100%</span>
+                            </div>
+                        </div>
+                        <div class="formula-section">
+                            <h4>Relationship Between Pendle Settings and Point Accruing Holdings</h4>
+                            <p>The <strong>Pendle Settings</strong> page defines the network-wide parameters that determine how points are distributed across the entire protocol. In <strong>Simple Mode</strong>, you specify the overall Pendle share percentage and base multipliers. This represents the total protocol TVL and how much of it is on Pendle vs. direct staking. In <strong>By Tokens Mode</strong>, you specify individual token/market configurations with their TVLs on Pendle and direct, plus their respective multipliers. This allows for more granular modeling of different tokens with different point multipliers.</p>
+                            <p>The <strong>Point Accruing Holdings</strong> page defines your personal positions: your token holdings (which tokens you own), your entry day (when you bought), your multiplier (your personal multiplier for that position), and your average cost (the price you paid).</p>
+                            <p><strong>How They Work Together:</strong> The Pendle Settings determine the <strong>network's total weighted contribution</strong> (denominator in the share calculation), which includes both positions on Pendle and directly staked tokens. In Simple Mode, this is calculated as: Protocol TVL × (Pendle Share × Pendle Multiplier + Direct Share × Direct Multiplier) × Days Remaining. In By Tokens Mode, this includes the weighted contributions from all configured tokens, each with their YT Pendle TVL and Direct TVL components. Your Point Accruing Holdings determine <strong>your weighted contribution</strong> (numerator in the share calculation). Your share = Your Weighted Contribution / Network Weighted Contribution. In "By Tokens" mode, your holdings must match one of the tokens configured in Pendle Settings (by token name) to be included in the calculation.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="startConfigBtn" class="btn btn-primary start-config-btn">Start Configurations</button>
+            </div>
+        </div>
+
+        <div class="config-navigation" id="configNavigation" style="display: none;">
+            <button id="prevPageBtn" class="nav-arrow">◀</button>
+            <div class="page-indicator">
+                <div class="config-title">Configuration</div>
+                <div class="page-title-number">
+                    <div class="page-title-with-icon">
+                        <span id="currentPageTitle">Global Parameters</span>
+                        <span class="page-info-icon-nav">ℹ</span>
+                        <span class="page-info-tooltip-nav">Configure the overall airdrop parameters including total supply, airdrop percentage, and program duration. These settings affect all calculations.</span>
+                    </div>
+                    <span class="page-counter"><span id="currentPageNum">1</span> / <span id="totalPages">5</span></span>
+                </div>
+            </div>
+            <button id="nextPageBtn" class="nav-arrow">▶</button>
+        </div>
+
+        <div class="main-content" id="mainContent" style="display: none;">
+            <!-- Configuration Panel -->
+            <div class="config-panel" id="configPanel">
+                <!-- Global Parameters -->
+                <section class="config-section config-page active" data-page="1" data-page-title="Global Parameters" data-page-info="Configure the overall airdrop parameters including total supply, airdrop percentage, and program duration. These settings affect all calculations.">
+                    <div class="input-group">
+                        <label>
+                            <span class="tooltip-text">Airdrop Percentage (%)</span>
+                            <span class="tooltip-content" data-info="Airdrop percentage is the allocated airdrop for that season only"></span>
+                        </label>
+                        <input type="number" id="airdropPct" step="0.1" min="0" max="100" placeholder="e.g., 10">
+                    </div>
+                    <div class="input-group">
+                        <label><span class="tooltip-text">Total Supply
+                            </span><span class="tooltip-content" data-info="Total token supply"></span></label>
+                        <input type="number" id="totalSupply" step="1000000" placeholder="e.g., 1000000000">
+                    </div>
+                    <div class="input-group">
+                        <label><span class="tooltip-text">Points Season/Program Duration/Time-to-Maturity (Days)
+                            </span><span class="tooltip-content" data-info="Duration of the points season/program or time to maturity of the market (in days)"></span></label>
+                        <input type="number" id="durationDays" min="1" placeholder="e.g., 80">
+                    </div>
+                    <div class="input-group">
+                        <label><span class="tooltip-text">Total Points During the Duration (Optional)
+                            </span><span class="tooltip-content" data-info="Total points allocated during the duration. If protocol announces total points directly, enter here. Leave empty to calculate from TVL/multipliers"></span></label>
+                        <input type="number" id="networkPointsTotal" value="" placeholder="Leave empty to calculate">
+                    </div>
+                </section>
+
+                <!-- Protocol TVL -->
+                <section class="config-section config-page" data-page="2" data-page-title="Protocol TVL" data-page-info="Set how the protocol's Total Value Locked changes over time. Choose from various curves (linear, exponential, logistic, etc.) to model TVL growth patterns." style="display: none;">
+                    <div class="input-group">
+                        <label><span class="tooltip-text">TVL Mode
+                            </span><span class="tooltip-content" data-info="How total protocol TVL changes over time: average (constant), linear, exponential, logistic, etc. See explanations below."></span></label>
+                        <select id="tvlMode">
+                            <option value="average">Average (Constant)</option>
+                            <option value="linear">Linear</option>
+                            <option value="exp">Exponential</option>
+                            <option value="logistic">Logistic</option>
+                            <option value="up_then_down">Up Then Down</option>
+                            <option value="down_then_up">Down Then Up</option>
+                            <option value="front_loaded">Front Loaded</option>
+                            <option value="back_loaded">Back Loaded</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="tvlInitialGroup">
+                        <label><span class="tooltip-text">TVL Initial (USD)
+                            </span><span class="tooltip-content" data-info="Starting total protocol TVL (not used if mode is 'average')"></span></label>
+                        <input type="number" id="tvlInitial" step="100000" placeholder="e.g., 20000000">
+                    </div>
+                    <div class="input-group" id="tvlFinalGroup">
+                        <label><span class="tooltip-text">TVL Final (USD)
+                            </span><span class="tooltip-content" data-info="Ending total protocol TVL (not used if mode is 'average')"></span></label>
+                        <input type="number" id="tvlFinal" step="100000" placeholder="e.g., 20000000">
+                    </div>
+                    <div class="input-group" id="tvlAverageGroup" style="display: none;">
+                        <label><span class="tooltip-text">TVL Average (USD)
+                            </span><span class="tooltip-content" data-info="Average total protocol TVL (only used if mode is 'average')"></span></label>
+                        <input type="number" id="tvlAverage" step="100000" placeholder="e.g., 30000000">
+                    </div>
+                    
+                    <div class="tvl-info-container">
+                        <h4>TVL Mode Explanations</h4>
+                        <ul>
+                            <li><strong>Average (Constant):</strong> Total protocol TVL remains constant at the specified average value throughout the duration.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>average</sub>
+                                </div>
+                            </li>
+                            <li><strong>Linear:</strong> Total protocol TVL grows linearly from initial to final value.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>initial</sub> + (TVL<sub>final</sub> - TVL<sub>initial</sub>) × <span style="white-space: nowrap;">(t / duration)</span>
+                                </div>
+                            </li>
+                            <li><strong>Exponential:</strong> Total protocol TVL grows exponentially from initial to final value.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>initial</sub> × e<sup>ln(TVL<sub>final</sub> / TVL<sub>initial</sub>) × (t / duration)</sup>
+                                </div>
+                            </li>
+                            <li><strong>Logistic:</strong> Total protocol TVL follows an S-curve (slow start, rapid growth, then slows down).
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>initial</sub> + <span style="white-space: nowrap;">(TVL<sub>final</sub> - TVL<sub>initial</sub>) / (1 + e<sup>-8 × ((t / duration) - 0.5)</sup>)</span>
+                                </div>
+                            </li>
+                            <li><strong>Up Then Down:</strong> Total protocol TVL peaks in the middle, rising then falling.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    If t ≤ 0.5:<br>
+                                    &nbsp;&nbsp;TVL(t) = TVL<sub>initial</sub> + (TVL<sub>final</sub> - TVL<sub>initial</sub>) × (t / 0.5)<br>
+                                    If t > 0.5:<br>
+                                    &nbsp;&nbsp;TVL(t) = TVL<sub>final</sub> + ((TVL<sub>initial</sub> + TVL<sub>final</sub>) / 2 - TVL<sub>final</sub>) × ((t - 0.5) / 0.5)
+                                </div>
+                            </li>
+                            <li><strong>Down Then Up:</strong> Total protocol TVL dips in the middle, falling then rising.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL<sub>mid</sub> = 0.7 × min(TVL<sub>initial</sub>, TVL<sub>final</sub>)<br>
+                                    If t ≤ 0.5:<br>
+                                    &nbsp;&nbsp;TVL(t) = TVL<sub>initial</sub> + (TVL<sub>mid</sub> - TVL<sub>initial</sub>) × (t / 0.5)<br>
+                                    If t > 0.5:<br>
+                                    &nbsp;&nbsp;TVL(t) = TVL<sub>mid</sub> + (TVL<sub>final</sub> - TVL<sub>mid</sub>) × ((t - 0.5) / 0.5)
+                                </div>
+                            </li>
+                            <li><strong>Front Loaded:</strong> Total protocol TVL is high early and decays over time.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>initial</sub> + (TVL<sub>final</sub> - TVL<sub>initial</sub>) × <span style="white-space: nowrap;">(1 - (t / duration)<sup>0.7</sup>)</span>
+                                </div>
+                            </li>
+                            <li><strong>Back Loaded:</strong> Total protocol TVL starts low and grows over time.
+                                <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+                                    TVL(t) = TVL<sub>initial</sub> + (TVL<sub>final</sub> - TVL<sub>initial</sub>) × <span style="white-space: nowrap;">(t / duration)<sup>2</sup></span>
+                                </div>
+                            </li>
+                        </ul>
+                        <p style="margin-top: 15px;"><em>Note: In all formulas, <strong>t</strong> represents the normalized time (0 to 1) over the duration, where <strong>t = (day - start_day) / (end_day - start_day)</strong></em></p>
+                    </div>
+                </section>
+
+                <!-- Pendle Settings -->
+                <section class="config-section config-page" data-page="3" data-page-title="Pendle Settings" data-page-info="Configure Pendle-specific settings. Choose between 'Simple' mode (overall Pendle share %) or 'By Tokens' mode (detailed token breakdowns with individual multipliers)." style="display: none;">
+                    <div class="input-group">
+                        <label><span class="tooltip-text">Pendle Mode
+                            </span><span class="tooltip-content" data-info="'simple' for overall Pendle share %, 'by_tokens' for detailed token breakdowns"></span></label>
+                        <select id="pendleMode">
+                            <option value="simple">Simple</option>
+                            <option value="by_tokens" selected>By Tokens</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Simple Mode Settings -->
+                    <div id="simpleModeSettings" class="sub-section" style="display: none;">
+                        <div class="input-group">
+                            <label><span class="tooltip-text">Pendle Share Mode
+                                </span><span class="tooltip-content" data-info="How Pendle share changes: linear or average (constant)"></span></label>
+                            <select id="pendleShareMode">
+                                <option value="linear">Linear</option>
+                                <option value="average">Average (Constant)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="pendleShareInitialGroup">
+                            <label><span class="tooltip-text">Pendle Share Initial (%)
+                                </span><span class="tooltip-content" data-info="Starting Pendle share percentage (only used if mode is 'linear')"></span></label>
+                            <input type="number" id="pendleShareInitial" step="1" min="0" max="100" placeholder="e.g., 30">
+                        </div>
+                        <div class="input-group" id="pendleShareFinalGroup">
+                            <label><span class="tooltip-text">Pendle Share Final (%)
+                                </span><span class="tooltip-content" data-info="Ending Pendle share percentage (only used if mode is 'linear')"></span></label>
+                            <input type="number" id="pendleShareFinal" step="1" min="0" max="100" placeholder="e.g., 30">
+                        </div>
+                        <div class="input-group" id="pendleShareAverageGroup" style="display: none;">
+                            <label><span class="tooltip-text">Pendle Share Average (Constant) (%)
+                                </span><span class="tooltip-content" data-info="Constant Pendle share percentage (only used if mode is 'average')"></span></label>
+                            <input type="number" id="pendleShareAverage" step="1" min="0" max="100" placeholder="e.g., 30">
+                        </div>
+                        <div class="input-group">
+                            <label><span class="tooltip-text">Base Point Multiplier Pendle
+                                </span><span class="tooltip-content" data-info="Points multiplier for Pendle positions"></span></label>
+                            <input type="number" id="baseMultiplierPendle" step="0.1" placeholder="e.g., 5.0">
+                        </div>
+                        <div class="input-group">
+                            <label><span class="tooltip-text">Base Point Multiplier Direct
+                                </span><span class="tooltip-content" data-info="Points multiplier for direct staking"></span></label>
+                            <input type="number" id="baseMultiplierDirect" step="0.1" placeholder="e.g., 1.0">
+                        </div>
+                    </div>
+
+                    <!-- By Tokens Mode Settings -->
+                    <div id="byTokensModeSettings" class="sub-section">
+                        <div class="input-group">
+                            <label><span class="tooltip-text">Component TVL Scaling
+                                </span><span class="tooltip-content" data-info="How component TVLs scale: 'proportional' maintains shares as TVL grows, 'constant' keeps absolute values"></span></label>
+                            <select id="componentTvlScaling">
+                                <option value="proportional" selected>Proportional</option>
+                                <option value="constant">Constant</option>
+                            </select>
+                        </div>
+                        <div id="tokenConfigsContainer">
+                            <div class="token-configs-header">
+                                <h4>Token Configurations</h4>
+                                <button id="addTokenBtn" class="btn btn-secondary btn-small">+ Add Token</button>
+                            </div>
+                            <div class="token-configs-grid">
+                                <div class="token-config" data-token-index="0">
+                                    <div class="token-header">
+                                        <h5>Point Accruing Material 1</h5>
+                                        <button class="btn-remove-token">Remove</button>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Token, Market or Material Name</label>
+                                        <input type="text" class="token-name" placeholder="e.g., xUSD">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">TVL YT Pendle (USD)
+                                            </span><span class="tooltip-content" data-info="TVL of YT on Pendle for this token"></span></label>
+                                        <input type="number" class="tvl-yt-pendle" step="1000" placeholder="e.g., 397000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">TVL Direct (USD)
+                                            </span><span class="tooltip-content" data-info="TVL directly on the protocol (not on Pendle)"></span></label>
+                                        <input type="number" class="tvl-direct" step="1000" placeholder="e.g., 873000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">Multiplier YT Pendle
+                                            </span><span class="tooltip-content" data-info="Points multiplier for YT on Pendle"></span></label>
+                                        <input type="number" class="mult-yt-pendle" step="0.1" placeholder="e.g., 5.0">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">Multiplier Direct
+                                            </span><span class="tooltip-content" data-info="Multiplier directly on the protocol"></span></label>
+                                        <input type="number" class="mult-direct" step="0.1" placeholder="e.g., 1.0">
+                                    </div>
+                                </div>
+                                <div class="token-config" data-token-index="1">
+                                    <div class="token-header">
+                                        <h5>Point Accruing Material 2</h5>
+                                        <button class="btn-remove-token">Remove</button>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Token, Market or Material Name</label>
+                                        <input type="text" class="token-name" placeholder="e.g., sxUSD">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">TVL YT Pendle (USD)
+                                            </span><span class="tooltip-content" data-info="TVL of YT on Pendle for this token"></span></label>
+                                        <input type="number" class="tvl-yt-pendle" step="1000" placeholder="e.g., 202000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">TVL Direct (USD)
+                                            </span><span class="tooltip-content" data-info="TVL directly on the protocol (not on Pendle)"></span></label>
+                                        <input type="number" class="tvl-direct" step="1000" placeholder="e.g., 15136000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">Multiplier YT Pendle
+                                            </span><span class="tooltip-content" data-info="Points multiplier for YT on Pendle"></span></label>
+                                        <input type="number" class="mult-yt-pendle" step="0.1" placeholder="e.g., 1.0">
+                                    </div>
+                                    <div class="input-group">
+                                        <label><span class="tooltip-text">Multiplier Direct
+                                            </span><span class="tooltip-content" data-info="Multiplier directly on the protocol"></span></label>
+                                        <input type="number" class="mult-direct" step="0.1" placeholder="e.g., 1.0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Info Box (shown in both modes) -->
+                    <div class="pendle-info-container">
+                        <h4>How to Find TVL of a YT Token on Pendle</h4>
+                        <p>To find the TVL of a YT token on Pendle:</p>
+                        <ol>
+                            <li>Open the YT page on Pendle</li>
+                            <li>Click on "Specs"</li>
+                            <li>Open the YT address on DeBank</li>
+                            <li>DeBank will display the TVL</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- User YT Holdings -->
+                <section class="config-section config-page" data-page="4" data-page-title="Point Accruing Holdings" data-page-info="Enter your personal point accruing material positions. Specify the token name, average cost, amount spent, entry day, and multiplier for each position you hold." style="display: none;">
+                    <div id="ytHoldingsContainer">
+                        <div class="yt-holding" data-holding-index="0">
+                            <div class="yt-header">
+                                <h5>Point Accruing Material 1</h5>
+                                <button class="btn-remove-yt">Remove</button>
+                            </div>
+                            <div class="input-group">
+                                <label>Token, Market or Material Name</label>
+                                <input type="text" class="yt-name" placeholder="e.g., xUSD-YT">
+                            </div>
+                            <div class="input-group">
+                                <label><span class="tooltip-text">Average Cost of Material (USD)
+                                    </span><span class="tooltip-content" data-info="The price you bought the token at, which is the price at your entry day"></span></label>
+                                <input type="number" class="yt-initial-price" step="0.00001" placeholder="e.g., 0.03572">
+                            </div>
+                            <div class="input-group">
+                                <label><span class="tooltip-text">USD to Spend
+                                    </span><span class="tooltip-content" data-info="How much USD you're spending"></span></label>
+                                <input type="number" class="yt-spend-usd" step="100" placeholder="e.g., 1500">
+                            </div>
+                            <div class="input-group">
+                                <label><span class="tooltip-text">Multiplier
+                                    </span><span class="tooltip-content" data-info="Your points multiplier for this position"></span></label>
+                                <input type="number" class="yt-multiplier" step="0.1" placeholder="e.g., 5.0">
+                            </div>
+                            <div class="input-group">
+                                <label><span class="tooltip-text">Entry Day
+                                    </span><span class="tooltip-content" data-info="Day you enter (will be overridden in timing sweep)"></span></label>
+                                <input type="number" class="yt-entry-day" min="0" placeholder="e.g., 3">
+                            </div>
+                            <div class="input-group">
+                                <label><span class="tooltip-text">Price Mode
+                                    </span><span class="tooltip-content" data-info="How the material price decays over time. See explanations below."></span></label>
+                                <select class="yt-price-mode">
+                                    <option value="linear_to_zero">Linear to Zero</option>
+                                    <option value="exp_to_zero">Exponential to Zero</option>
+                                    <option value="stepwise_linear" selected>Stepwise Linear to Zero</option>
+                                    <option value="two_phase">Two Phase (Campaign)</option>
+                                </select>
+                            </div>
+                            <div class="sub-section campaign-settings" style="display: none;">
+                                <div class="input-group">
+                                    <label><span class="tooltip-text">Campaign End Day
+                                        </span><span class="tooltip-content" data-info="The day when the campaign ends and the price drop occurs"></span></label>
+                                    <input type="number" class="yt-campaign-end-day" min="0" placeholder="e.g., 9">
+                                </div>
+                                <div class="input-group">
+                                    <label><span class="tooltip-text">Pre Mode
+                                        </span><span class="tooltip-content" data-info="Price behavior before campaign ends: Flat (constant), Slow Linear (gradual decline), or Slow Exponential (gradual exponential decline)"></span></label>
+                                    <select class="yt-pre-mode">
+                                        <option value="flat">Flat</option>
+                                        <option value="slow_linear">Slow Linear</option>
+                                        <option value="slow_exp">Slow Exponential</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label><span class="tooltip-text">Post Mode
+                                        </span><span class="tooltip-content" data-info="Price behavior after campaign ends: Linear to Zero, Exponential to Zero, or Stepwise Linear to Zero"></span></label>
+                                    <select class="yt-post-mode">
+                                        <option value="linear_to_zero">Linear to Zero</option>
+                                        <option value="exp_to_zero" selected>Exponential to Zero</option>
+                                        <option value="stepwise_linear">Stepwise Linear to Zero</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label><span class="tooltip-text">Post Discount (%)
+                                        </span><span class="tooltip-content" data-info="Percentage price drop when campaign ends (e.g., 30% means price drops to 70% of pre-campaign price)"></span></label>
+                                    <input type="number" class="yt-post-discount" step="1" min="0" max="100" placeholder="e.g., 30">
+                                </div>
+                            </div>
+                            <div class="input-group yt-step-days-group">
+                                <label><span class="tooltip-text">Step Days
+                                    </span><span class="tooltip-content" data-info="Step size for stepwise modes. Usually the day of yield distribution frequency (e.g., 7 for weekly distributions)"></span></label>
+                                <input type="number" class="yt-step-days" min="1" placeholder="e.g., 7">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; justify-content: flex-start;">
+                        <button id="addYTHoldingBtn" class="btn btn-secondary btn-small">+ Add Position</button>
+                    </div>
+                    
+                    <!-- Info Box -->
+                    <div class="yt-price-info-container">
+                        <h4>Price Mode Explanations</h4>
+                        <ul>
+                            <li><strong>Linear to Zero:</strong> Price decreases linearly from initial price to near zero over the duration.</li>
+                            <li><strong>Exponential to Zero:</strong> Price decreases exponentially from initial price to near zero over the duration.</li>
+                            <li><strong>Stepwise Linear to Zero:</strong> Price drops in steps (usually aligned with yield distribution frequency). Price decreases by a fixed amount each step period until reaching zero.</li>
+                            <li><strong>Two Phase (Campaign):</strong> Price behavior changes at a campaign end day. Before the campaign ends, price follows Pre Mode (flat, slow linear, or slow exponential). At campaign end, price drops by Post Discount percentage. After campaign ends, price follows Post Mode (linear, exponential, or stepwise to zero).</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Other Settings -->
+                <section class="config-section config-page" data-page="5" data-page-title="Other Settings" data-page-info="Configure additional settings including time weighting, FDV scenarios for ROI calculations, and timing sweep options to find optimal entry days." style="display: none;">
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="timeWeighting" checked> <span class="tooltip-text">Time Weighting
+                            </span><span class="tooltip-content" data-info="If enabled, early entry gets more points. If disabled, all days are equal"></span>
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label><span class="tooltip-text">FDV Scenarios (comma-separated, in millions)
+                            </span><span class="tooltip-content" data-info="Fully Diluted Valuation scenarios to calculate ROI for (e.g., 20,50,100,200,500)"></span></label>
+                        <input type="text" id="fdvList" placeholder="e.g., 20,50,100,200,500">
+                    </div>
+                    <div class="input-group">
+                        <label><input type="checkbox" id="runTimingSweep" checked> <span class="tooltip-text">Run Timing Sweep
+                        </span><span class="tooltip-content" data-info="Find optimal entry day by testing all possible entry days"></span></label>
+                    </div>
+                    <div class="input-group">
+                        <label><span class="tooltip-text">Entry Days to Test (comma-separated, leave empty for all)
+                            </span><span class="tooltip-content" data-info="Specific days to test in timing sweep. Leave empty to test all days"></span></label>
+                        <input type="text" id="entryDaysToTest" value="" placeholder="e.g., 0,5,10,15 or leave empty">
+                    </div>
+                </section>
+                
+                <!-- Calculate Button (only on last page) -->
+                <div id="calculateButtonContainer" class="calculate-container" style="display: none;">
+                    <button id="calculateBtn" class="btn btn-primary">Calculate</button>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel" id="resultsPanel" style="display: none;">
+                <h2>Results</h2>
+                <div id="resultsContainer">
+                    <p class="placeholder">Click "Calculate" to see results</p>
+                </div>
+            </div>
+            
+            <!-- Back to Configuration Button -->
+            <div id="backToConfigContainer" class="back-to-config-container" style="display: none;">
+                <button id="backToConfigBtn" class="btn btn-primary">← Back to Configuration</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="calculator.js"></script>
+    <script src="script.js"></script>
+    
+    <!-- X (Twitter) Link -->
+    <a href="https://x.com/marcusm4ximus" target="_blank" class="x-link" title="Follow on X">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+    </a>
+</body>
+</html>
+
+
