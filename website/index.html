@@ -335,6 +335,20 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Token Configuration Info Box -->
+                            <div class="pendle-info-container" style="margin-top: 30px;">
+                                <h4>About Token Configurations</h4>
+                                <p>Each token configuration represents a point-accruing material (token, market, or material) in the protocol. For each token, you specify:</p>
+                                <ul style="list-style: none; padding-left: 0;">
+                                    <li style="margin-bottom: 10px;"><strong>TVL YT Pendle:</strong> The total value locked of YT tokens on Pendle for this specific token.</li>
+                                    <li style="margin-bottom: 10px;"><strong>TVL Direct:</strong> The total value locked directly staked on the protocol (not on Pendle) for this token.</li>
+                                    <li style="margin-bottom: 10px;"><strong>Multipliers:</strong> The points multipliers for positions on Pendle vs. direct staking.</li>
+                                </ul>
+                                <p style="margin-top: 15px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-left: 3px solid var(--warning); border-radius: 4px;">
+                                    <strong>Important Note:</strong> When you have multiple related tokens (e.g., yzUSD and syzUSD), the TVL for the base token (e.g., yzUSD) represents <strong>only what is not staked</strong>. It does not include the staked portion, which should be configured as a separate token (e.g., syzUSD) with its own TVL Direct value.
+                                </p>
+                            </div>
                         </div>
                     </div>
                     
@@ -491,6 +505,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="calculator.js"></script>
     <script src="script.js"></script>
     

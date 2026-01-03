@@ -89,6 +89,7 @@ function initializeEventListeners() {
     updatePageNavigation();
 }
 
+
 // Setup TVL mode toggle
 function setupTvlModeToggle() {
     const tvlMode = document.getElementById('tvlMode');
@@ -526,8 +527,262 @@ function readConfig() {
     };
 }
 
+// Validate configuration before calculation
+function validateConfig() {
+    const errors = [];
+    
+    // Helper function to check if a value is empty or invalid
+    function isEmptyOrInvalid(value, min = 0) {
+        if (value === null || value === undefined) return true;
+        const trimmed = String(value).trim();
+        // Check if truly empty
+        if (trimmed === '' || trimmed === null || trimmed === undefined) {
+            return true;
+        }
+        // Parse the number
+        const num = parseFloat(trimmed);
+        if (isNaN(num)) return true;
+        // For min > 0, zero or negative is invalid
+        // For min <= 0 (like -1 for allowing 0), only negative is invalid
+        return num <= min;
+    }
+    
+    // Global Parameters
+    const airdropPctEl = document.getElementById('airdropPct');
+    if (!airdropPctEl || isEmptyOrInvalid(airdropPctEl.value, 0)) {
+        errors.push("Global Parameters: Airdrop Percentage is required and must be greater than 0");
+    }
+    
+    const totalSupplyEl = document.getElementById('totalSupply');
+    if (!totalSupplyEl || isEmptyOrInvalid(totalSupplyEl.value, 0)) {
+        errors.push("Global Parameters: Total Supply is required and must be greater than 0");
+    }
+    
+    const durationDaysEl = document.getElementById('durationDays');
+    if (!durationDaysEl || isEmptyOrInvalid(durationDaysEl.value, 0)) {
+        errors.push("Global Parameters: Points Season/Program Duration/Time-to-Maturity (Days) is required and must be greater than 0");
+    }
+    
+    // Protocol TVL
+    const tvlModeEl = document.getElementById('tvlMode');
+    if (!tvlModeEl) {
+        errors.push("Protocol TVL: TVL Mode is required");
+    } else {
+        const tvlMode = tvlModeEl.value;
+        
+        if (tvlMode === 'average') {
+            const tvlAverageEl = document.getElementById('tvlAverage');
+            if (!tvlAverageEl || isEmptyOrInvalid(tvlAverageEl.value, 0)) {
+                errors.push("Protocol TVL: TVL Average is required when Average (Constant) mode is selected");
+            }
+        } else {
+            const tvlInitialEl = document.getElementById('tvlInitial');
+            if (!tvlInitialEl || isEmptyOrInvalid(tvlInitialEl.value, 0)) {
+                errors.push("Protocol TVL: TVL Initial is required and must be greater than 0");
+            }
+            
+            if (tvlMode !== 'constant') {
+                const tvlFinalEl = document.getElementById('tvlFinal');
+                if (!tvlFinalEl || isEmptyOrInvalid(tvlFinalEl.value, 0)) {
+                    errors.push("Protocol TVL: TVL Final is required and must be greater than 0");
+                }
+            }
+        }
+    }
+    
+    // Pendle Settings
+    const pendleModeEl = document.getElementById('pendleMode');
+    if (!pendleModeEl) {
+        errors.push("Pendle Settings: Pendle Mode is required");
+    } else {
+        const pendleMode = pendleModeEl.value;
+        
+        if (pendleMode === 'simple') {
+            const pendleShareModeEl = document.getElementById('pendleShareMode');
+            if (!pendleShareModeEl) {
+                errors.push("Pendle Settings: Pendle Share Mode is required");
+            } else {
+                const pendleShareMode = pendleShareModeEl.value;
+                
+                if (pendleShareMode === 'average') {
+                    const pendleShareAverageEl = document.getElementById('pendleShareAverage');
+                    if (!pendleShareAverageEl || isEmptyOrInvalid(pendleShareAverageEl.value, 0)) {
+                        errors.push("Pendle Settings: Pendle Share Average is required when Average (Constant) mode is selected");
+                    }
+                } else {
+                    const pendleShareInitialEl = document.getElementById('pendleShareInitial');
+                    if (!pendleShareInitialEl || isEmptyOrInvalid(pendleShareInitialEl.value, 0)) {
+                        errors.push("Pendle Settings: Pendle Share Initial is required and must be greater than 0");
+                    }
+                    
+                    if (pendleShareMode !== 'constant') {
+                        const pendleShareFinalEl = document.getElementById('pendleShareFinal');
+                        if (!pendleShareFinalEl || isEmptyOrInvalid(pendleShareFinalEl.value, 0)) {
+                            errors.push("Pendle Settings: Pendle Share Final is required and must be greater than 0");
+                        }
+                    }
+                }
+            }
+            
+            const baseMultiplierPendleEl = document.getElementById('baseMultiplierPendle');
+            if (!baseMultiplierPendleEl || isEmptyOrInvalid(baseMultiplierPendleEl.value, 0)) {
+                errors.push("Pendle Settings: Base Point Multiplier Pendle is required and must be greater than 0");
+            }
+            
+            const baseMultiplierDirectEl = document.getElementById('baseMultiplierDirect');
+            if (!baseMultiplierDirectEl || isEmptyOrInvalid(baseMultiplierDirectEl.value, 0)) {
+                errors.push("Pendle Settings: Base Point Multiplier Direct is required and must be greater than 0");
+            }
+        } else if (pendleMode === 'by_tokens') {
+            const tokenConfigs = document.querySelectorAll('.token-config');
+            if (tokenConfigs.length === 0) {
+                errors.push("Pendle Settings: At least one token configuration is required in By Tokens mode");
+            } else {
+                tokenConfigs.forEach((config, index) => {
+                    const tokenNameEl = config.querySelector('.token-name');
+                    const tokenName = tokenNameEl ? tokenNameEl.value.trim() : '';
+                    if (!tokenName) {
+                        errors.push(`Pendle Settings: Token ${index + 1} - Token, Market or Material Name is required`);
+                    }
+                    
+                    const tvlYtPendleEl = config.querySelector('.tvl-yt-pendle');
+                    if (!tvlYtPendleEl || isEmptyOrInvalid(tvlYtPendleEl.value, -1)) {
+                        errors.push(`Pendle Settings: Token ${index + 1} (${tokenName || 'unnamed'}) - TVL YT Pendle (USD) is required and must be 0 or greater`);
+                    }
+                    
+                    const tvlDirectEl = config.querySelector('.tvl-direct');
+                    if (!tvlDirectEl || isEmptyOrInvalid(tvlDirectEl.value, -1)) {
+                        errors.push(`Pendle Settings: Token ${index + 1} (${tokenName || 'unnamed'}) - TVL Direct (USD) is required and must be 0 or greater`);
+                    }
+                    
+                    const multYtPendleEl = config.querySelector('.mult-yt-pendle');
+                    if (!multYtPendleEl || isEmptyOrInvalid(multYtPendleEl.value, 0)) {
+                        errors.push(`Pendle Settings: Token ${index + 1} (${tokenName || 'unnamed'}) - Multiplier YT Pendle is required and must be greater than 0`);
+                    }
+                    
+                    const multDirectEl = config.querySelector('.mult-direct');
+                    if (!multDirectEl || isEmptyOrInvalid(multDirectEl.value, 0)) {
+                        errors.push(`Pendle Settings: Token ${index + 1} (${tokenName || 'unnamed'}) - Multiplier Direct is required and must be greater than 0`);
+                    }
+                });
+            }
+        }
+    }
+    
+    // Point Accruing Holdings
+    const ytHoldings = document.querySelectorAll('.yt-holding');
+    if (ytHoldings.length === 0) {
+        errors.push("Point Accruing Holdings: At least one Point Accruing Material is required");
+    } else {
+        ytHoldings.forEach((holding, index) => {
+            const tokenNameEl = holding.querySelector('.yt-name');
+            const tokenName = tokenNameEl ? tokenNameEl.value.trim() : '';
+            if (!tokenName) {
+                errors.push(`Point Accruing Holdings: Material ${index + 1} - Token, Market or Material Name is required`);
+            }
+            
+            const initialPriceEl = holding.querySelector('.yt-initial-price');
+            if (!initialPriceEl || isEmptyOrInvalid(initialPriceEl.value, 0)) {
+                errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Average Cost of Material (USD) is required and must be greater than 0`);
+            }
+            
+            const spendUsdEl = holding.querySelector('.yt-spend-usd');
+            if (!spendUsdEl || isEmptyOrInvalid(spendUsdEl.value, 0)) {
+                errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Amount Spent (USD) is required and must be greater than 0`);
+            }
+            
+            const multiplierEl = holding.querySelector('.yt-multiplier');
+            if (!multiplierEl || isEmptyOrInvalid(multiplierEl.value, 0)) {
+                errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Multiplier is required and must be greater than 0`);
+            }
+            
+            const entryDayEl = holding.querySelector('.yt-entry-day');
+            if (!entryDayEl || isEmptyOrInvalid(entryDayEl.value, -1)) {
+                errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Entry Day is required and must be 0 or greater`);
+            }
+            
+            const priceModeEl = holding.querySelector('.yt-price-mode');
+            if (priceModeEl && priceModeEl.value === 'two_phase') {
+                const campaignEndDayEl = holding.querySelector('.yt-campaign-end-day');
+                if (!campaignEndDayEl || isEmptyOrInvalid(campaignEndDayEl.value, -1)) {
+                    errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Campaign End Day is required and must be 0 or greater`);
+                }
+                
+                const postDiscountEl = holding.querySelector('.yt-post-discount');
+                if (!postDiscountEl) {
+                    errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Post-Campaign Discount (%) is required`);
+                } else {
+                    const postDiscount = postDiscountEl.value.trim();
+                    const discountNum = parseFloat(postDiscount);
+                    if (!postDiscount || isNaN(discountNum) || discountNum < 0 || discountNum > 100) {
+                        errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Post-Campaign Discount (%) is required and must be between 0 and 100`);
+                    }
+                }
+            }
+            
+            // Check if step days is required
+            const stepDaysInput = holding.querySelector('.yt-step-days');
+            if (stepDaysInput && stepDaysInput.offsetParent !== null) {
+                if (isEmptyOrInvalid(stepDaysInput.value, 0)) {
+                    errors.push(`Point Accruing Holdings: Material ${index + 1} (${tokenName || 'unnamed'}) - Step Days is required and must be greater than 0`);
+                }
+            }
+        });
+    }
+    
+    // Other Settings
+    const fdvListEl = document.getElementById('fdvList');
+    if (!fdvListEl) {
+        errors.push("Other Settings: FDV Scenarios field is missing");
+    } else {
+        const fdvList = fdvListEl.value.trim();
+        if (!fdvList) {
+            errors.push("Other Settings: FDV Scenarios is required (e.g., 20,50,100,200,500)");
+        } else {
+            const fdvValues = fdvList.split(',').map(s => s.trim()).filter(s => s);
+            if (fdvValues.length === 0) {
+                errors.push("Other Settings: FDV Scenarios must contain at least one value");
+            } else {
+                fdvValues.forEach((fdv, index) => {
+                    if (isNaN(parseFloat(fdv)) || parseFloat(fdv) <= 0) {
+                        errors.push(`Other Settings: FDV Scenarios - Value ${index + 1} ("${fdv}") is not a valid number`);
+                    }
+                });
+            }
+        }
+    }
+    
+    return errors;
+}
+
 // Calculate and display results
 function calculate() {
+    console.log("Calculate button clicked!");
+    
+    // Validate first
+    let validationErrors = [];
+    try {
+        validationErrors = validateConfig();
+        console.log("Validation completed. Errors found:", validationErrors.length);
+        console.log("Validation errors:", validationErrors);
+    } catch (error) {
+        console.error("Error during validation:", error);
+        validationErrors = ["Validation error: " + error.message];
+    }
+    
+    if (validationErrors.length > 0) {
+        // Show errors in a user-friendly way
+        const errorMessage = "Please fill in the following missing or invalid fields:\n\n" + validationErrors.join("\n");
+        console.log("Displaying error message:", errorMessage);
+        displayError(errorMessage);
+        
+        // Scroll to top to see the error
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+    
+    console.log("Validation passed, proceeding with calculation...");
+    
     try {
         const config = readConfig();
         const results = calculator.simulateAirdropUnified(config);
@@ -543,9 +798,15 @@ function calculate() {
         
         displayResults(results, config);
         
+        // Check if timing sweep is enabled
         if (config.runTimingSweep) {
-            // TODO: Implement timing sweep
-            displayTimingSweepPlaceholder();
+            try {
+                const timingResults = calculateTimingSweep(config);
+                displayTimingSweepResults(timingResults, config);
+            } catch (error) {
+                console.error("Error calculating timing sweep:", error);
+                displayError("Error calculating timing sweep: " + error.message);
+            }
         }
     } catch (error) {
         displayError(error.message);
@@ -637,9 +898,434 @@ function displayTimingSweepPlaceholder() {
     container.appendChild(timingSection);
 }
 
-function displayError(message) {
+// Calculate optimal entry
+// Calculate timing sweep - test different entry days for existing holdings
+function calculateTimingSweep(baseConfig) {
+    // Get entry days to test
+    const entryDaysToTest = baseConfig.entryDaysToTest;
+    let daysToTest;
+    
+    if (entryDaysToTest && entryDaysToTest.length > 0) {
+        // Filter and validate the specified days
+        daysToTest = entryDaysToTest
+            .filter(d => !isNaN(d) && d >= 0 && d < baseConfig.durationDays)
+            .sort((a, b) => a - b);  // Sort in ascending order
+        console.log("Testing specified entry days:", daysToTest);
+    } else {
+        // If no days specified, test all days
+        daysToTest = Array.from({ length: baseConfig.durationDays }, (_, i) => i);
+        console.log("No entry days specified, testing all days:", daysToTest.length);
+    }
+    
+    const results = [];
+    
+    // Test each entry day for each holding
+    baseConfig.userYtTokens.forEach((holding, holdingIndex) => {
+        const holdingResults = [];
+        
+        daysToTest.forEach(entryDay => {
+            // Calculate YT price at this entry day
+            const days = Array.from({ length: baseConfig.durationDays }, (_, i) => i);
+            const pricePath = calculator.buildYtPricePath(
+                days,
+                holding.yt_price_mode,
+                holding.initial_price,
+                1e-4,
+                holding.step_days || 7,
+                holding.campaign_enabled || false,
+                holding.campaign_end_day,
+                holding.pre_mode || 'flat',
+                holding.post_mode || 'linear_to_zero',
+                holding.post_discount || 0.3
+            );
+            
+            const ytPriceAtEntry = pricePath[entryDay];
+            
+            // Create modified holding with new entry day
+            const modifiedHolding = {
+                ...holding,
+                entry_day: entryDay,
+                initial_price: ytPriceAtEntry  // Update initial price to match entry day price
+            };
+            
+            // Create test config with modified holding
+            const testConfig = {
+                ...baseConfig,
+                userYtTokens: baseConfig.userYtTokens.map((h, i) => 
+                    i === holdingIndex ? modifiedHolding : h
+                )
+            };
+            
+            try {
+                const calcResults = calculator.simulateAirdropUnified(testConfig);
+                
+                // Calculate ROI for each FDV
+                const rois = {};
+                const roiValues = [];
+                
+                baseConfig.fdvList.forEach(fdv => {
+                    const tokenPrice = fdv / baseConfig.totalSupply;
+                    const airdropTokens = baseConfig.totalSupply * baseConfig.airdropPct * calcResults.user_share;
+                    const airdropValue = airdropTokens * tokenPrice;
+                    const totalSpent = calcResults.total_spent_usd;
+                    const roi = (airdropValue - totalSpent) / totalSpent;
+                    rois[fdv] = roi;
+                    roiValues.push(roi);
+                });
+                
+                const avgRoi = roiValues.reduce((a, b) => a + b, 0) / roiValues.length;
+                const minRoi = Math.min(...roiValues);
+                const maxRoi = Math.max(...roiValues);
+                
+                // Calculate variance
+                const variance = roiValues.reduce((sum, roi) => sum + Math.pow(roi - avgRoi, 2), 0) / roiValues.length;
+                const stdDev = Math.sqrt(variance);
+                const riskRewardScore = avgRoi - (stdDev * 0.5);
+                
+                holdingResults.push({
+                    holdingIndex: holdingIndex,
+                    holdingName: holding.name,
+                    entryDay: entryDay,
+                    ytPrice: ytPriceAtEntry,
+                    rois: rois,
+                    avgRoi: avgRoi,
+                    minRoi: minRoi,
+                    maxRoi: maxRoi,
+                    riskRewardScore: riskRewardScore,
+                    userShare: calcResults.user_share
+                });
+            } catch (error) {
+                console.warn(`Error calculating for holding ${holdingIndex}, entry day ${entryDay}:`, error);
+            }
+        });
+        
+        // Sort by entry day (ascending) to show in order, not by risk/reward
+        holdingResults.sort((a, b) => a.entryDay - b.entryDay);
+        results.push({
+            holdingName: holding.name,
+            options: holdingResults  // Show all days, not just top 5
+        });
+    });
+    
+    return results;
+}
+
+// Display timing sweep results
+function displayTimingSweepResults(timingResults, config) {
     const container = document.getElementById('resultsContainer');
-    container.innerHTML = `<div class="error">Error: ${message}</div>`;
+    
+    if (!timingResults || timingResults.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'results-section';
+        noResults.style.marginTop = '40px';
+        noResults.innerHTML = `
+            <h3 style="color: var(--yt-blue);">Timing Sweep Results</h3>
+            <p style="color: var(--mono-200);">No results found.</p>
+        `;
+        container.appendChild(noResults);
+        return;
+    }
+    
+    // Create section for timing sweep results
+    const timingSection = document.createElement('div');
+    timingSection.className = 'results-section';
+    timingSection.style.marginTop = '40px';
+    timingSection.style.paddingTop = '30px';
+    timingSection.style.borderTop = '2px solid var(--water-700)';
+    
+    timingSection.innerHTML = `
+        <h3 style="color: var(--yt-blue); margin-bottom: 20px;">Timing Sweep Results</h3>
+        <p style="color: var(--mono-200); margin-bottom: 25px;">Results for each entry day tested, showing estimated YT price and ROI across FDV scenarios</p>
+    `;
+    
+    // Display results for each holding
+    timingResults.forEach((holdingResult, holdingIdx) => {
+        if (holdingResult.options.length === 0) return;
+        
+        const holdingDiv = document.createElement('div');
+        holdingDiv.style.marginBottom = '40px';
+        holdingDiv.style.padding = '20px';
+        holdingDiv.style.background = 'rgba(96, 121, 255, 0.05)';
+        holdingDiv.style.border = '1px solid var(--water-600)';
+        holdingDiv.style.borderRadius = '6px';
+        
+        holdingDiv.innerHTML = `
+            <h4 style="color: var(--yt-blue); margin-bottom: 20px;">${holdingResult.holdingName}</h4>
+        `;
+        
+        // Display top options for this holding
+        holdingResult.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.style.marginBottom = '20px';
+            optionDiv.style.padding = '15px';
+            optionDiv.style.background = 'rgba(96, 121, 255, 0.1)';
+            optionDiv.style.border = '2px solid var(--water-500)';
+            optionDiv.style.borderRadius = '6px';
+            
+            const rankColor = index === 0 ? 'var(--pt-green)' : index === 1 ? 'var(--yt-blue)' : 'var(--water-400)';
+            
+            optionDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h5 style="color: ${rankColor}; margin: 0;">Option ${index + 1}</h5>
+                    <span style="color: var(--mono-200); font-size: 0.9em;">Risk/Reward: <strong style="color: ${rankColor};">${(option.riskRewardScore * 100).toFixed(2)}%</strong></span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <span style="color: var(--mono-300); font-size: 0.9em;">Entry Day:</span>
+                        <strong style="color: var(--mono-100); display: block;">${option.entryDay}</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--mono-300); font-size: 0.9em;">YT Price:</span>
+                        <strong style="color: var(--mono-100); display: block;">$${option.ytPrice.toFixed(5)}</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--mono-300); font-size: 0.9em;">Avg ROI:</span>
+                        <strong style="color: var(--pt-green); display: block;">${(option.avgRoi * 100).toFixed(2)}%</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--mono-300); font-size: 0.9em;">User Share:</span>
+                        <strong style="color: var(--mono-100); display: block;">${(option.userShare * 100).toFixed(4)}%</strong>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--water-700);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px;">
+                        ${config.fdvList.map(fdv => {
+                            const roi = option.rois[fdv];
+                            const roiClass = roi > 0 ? 'var(--pt-green)' : 'var(--guava)';
+                            return `
+                                <div style="padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; text-align: center;">
+                                    <div style="color: var(--mono-300); font-size: 0.8em;">$${(fdv / 1000000).toFixed(0)}M</div>
+                                    <strong style="color: ${roiClass}; font-size: 0.9em;">${(roi * 100).toFixed(1)}%</strong>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            holdingDiv.appendChild(optionDiv);
+        });
+        
+        timingSection.appendChild(holdingDiv);
+    });
+    
+    container.appendChild(timingSection);
+    
+    // Add chart showing ROI vs Entry Day
+    displayTimingSweepChart(timingResults, config);
+}
+
+// Display chart for timing sweep results
+function displayTimingSweepChart(timingResults, config) {
+    const container = document.getElementById('resultsContainer');
+    
+    const chartSection = document.createElement('div');
+    chartSection.className = 'results-section';
+    chartSection.style.marginTop = '30px';
+    chartSection.style.padding = '20px';
+    chartSection.style.background = 'rgba(0,0,0,0.2)';
+    chartSection.style.borderRadius = '6px';
+    
+    chartSection.innerHTML = `
+        <h4 style="color: var(--yt-blue); margin-bottom: 15px;">ROI vs Entry Day</h4>
+        <canvas id="timingSweepChart" style="max-height: 400px;"></canvas>
+    `;
+    
+    container.appendChild(chartSection);
+    
+    // Wait for canvas to be in DOM
+    setTimeout(() => {
+        const ctx = document.getElementById('timingSweepChart');
+        if (!ctx || typeof Chart === 'undefined') {
+            console.warn("Chart.js not loaded or canvas not found");
+            return;
+        }
+        
+        // Prepare data for all holdings
+        const datasets = [];
+        const colors = [
+            { border: 'rgb(27, 227, 194)', fill: 'rgba(27, 227, 194, 0.1)' },  // pt-green
+            { border: 'rgb(122, 183, 255)', fill: 'rgba(122, 183, 255, 0.1)' },  // yt-blue
+            { border: 'rgb(96, 121, 255)', fill: 'rgba(96, 121, 255, 0.1)' },   // pendle-blue
+            { border: 'rgb(240, 206, 116)', fill: 'rgba(240, 206, 116, 0.1)' }, // gold
+            { border: 'rgb(239, 181, 75)', fill: 'rgba(239, 181, 75, 0.1)' }   // warning
+        ];
+        
+        // Get all unique entry days across all holdings
+        const allEntryDays = new Set();
+        timingResults.forEach(holdingResult => {
+            holdingResult.options.forEach(option => {
+                allEntryDays.add(option.entryDay);
+            });
+        });
+        const sortedEntryDays = Array.from(allEntryDays).sort((a, b) => a - b);
+        
+        // Create dataset for each holding
+        timingResults.forEach((holdingResult, holdingIdx) => {
+            if (holdingResult.options.length === 0) return;
+            
+            const avgRois = sortedEntryDays.map(day => {
+                const option = holdingResult.options.find(o => o.entryDay === day);
+                return option ? option.avgRoi * 100 : null;
+            });
+            
+            const color = colors[holdingIdx % colors.length];
+            
+            datasets.push({
+                label: `${holdingResult.holdingName} - Avg ROI`,
+                data: avgRois,
+                borderColor: color.border,
+                backgroundColor: color.fill,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            });
+        });
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedEntryDays,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'rgb(222, 222, 222)',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Average ROI by Entry Day',
+                        color: 'rgb(222, 222, 222)',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                if (value === null) return '';
+                                return context.dataset.label + ': ' + value.toFixed(2) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Entry Day',
+                            color: 'rgb(222, 222, 222)',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            color: 'rgb(222, 222, 222)'
+                        },
+                        grid: {
+                            color: 'rgba(222, 222, 222, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'ROI (%)',
+                            color: 'rgb(222, 222, 222)',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            color: 'rgb(222, 222, 222)',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(222, 222, 222, 0.1)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+    }, 100);
+}
+
+
+function displayError(message) {
+    console.log("displayError called with message:", message);
+    
+    // Show results panel to display error
+    const configPanel = document.querySelector('.config-panel');
+    const configNav = document.querySelector('.config-navigation');
+    const resultsPanel = document.getElementById('resultsPanel');
+    
+    console.log("Elements found:", {
+        configPanel: !!configPanel,
+        configNav: !!configNav,
+        resultsPanel: !!resultsPanel
+    });
+    
+    if (configPanel) {
+        configPanel.style.display = 'none';
+        console.log("Hid config panel");
+    }
+    if (configNav) {
+        configNav.style.display = 'none';
+        console.log("Hid config nav");
+    }
+    if (resultsPanel) {
+        resultsPanel.style.display = 'block';
+        console.log("Showed results panel");
+    }
+    
+    const backToConfigContainer = document.getElementById('backToConfigContainer');
+    if (backToConfigContainer) {
+        backToConfigContainer.style.display = 'flex';
+    }
+    
+    const container = document.getElementById('resultsContainer');
+    if (!container) {
+        console.error("Results container not found!");
+        alert("Error: " + message);
+        return;
+    }
+    
+    console.log("Container found, setting innerHTML");
+    
+    // Format error message with line breaks
+    const formattedMessage = message.split('\n').map(line => {
+        if (line.trim() === '') return '<br>';
+        return `<div style="margin: 8px 0; padding-left: 15px; border-left: 3px solid #ff6666;">${line}</div>`;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="error" style="padding: 25px; background: rgba(255, 0, 0, 0.15); border: 3px solid #ff4444; border-radius: 8px; color: #ffaaaa; margin: 20px 0;">
+            <h3 style="color: #ff6666; margin-top: 0; margin-bottom: 15px; font-size: 1.3em;">⚠️ Missing or Invalid Information</h3>
+            <div style="line-height: 1.8; font-size: 1.05em;">${formattedMessage}</div>
+        </div>
+    `;
+    
+    console.log("Error displayed in container. Container innerHTML length:", container.innerHTML.length);
+    
+    // Force a repaint
+    container.offsetHeight;
 }
 
 function formatNumber(num) {
